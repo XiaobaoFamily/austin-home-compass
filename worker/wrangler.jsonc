@@ -1,0 +1,10 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "austin-home-compass-ingest",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-14",
+  // Disabled until at least one official source adapter passes size/CPU/schema validation.
+  "triggers": { "crons": [] },
+  "vars": { "INGESTION_ENABLED": "false", "SUPABASE_URL": "" },
+  "observability": { "enabled": true }
+}
