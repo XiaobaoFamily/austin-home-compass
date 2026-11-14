@@ -5,7 +5,7 @@ React + TypeScript 静态 PWA → GitHub Pages；Supabase → 登录与私人数
 ## 当前实际完成范围
 
 - 响应式总览、真实指标列表、候选房源新增/状态更新/删除、地图路线链接、成本试算。
-- Supabase 账号密码登录、用户白名单与 RLS、房源 JSON 导出/恢复。
+- Supabase 用户名/密码登录、用户白名单与 RLS、房源 JSON 导出/恢复。
 - 相对路径 PWA manifest、图标、应用外壳缓存、GitHub Pages Actions 部署。
 - **未接入真实市场数据。Worker 仅为调度骨架，cron 默认关闭。** 不会生成假的市场评分。
 - 区域自动排名、逐源 CSV 导入、房源并排比较、预算设置持久化、编辑已有笔记、离线私人笔记及买租比较尚未实现。
@@ -31,19 +31,23 @@ npm run build
 ## Supabase 配置
 
 1. 新建 Free 项目，在 SQL Editor 执行 `supabase/migrations/001_initial.sql`。
-2. 关闭 Authentication 中公开注册。通过管理后台创建自己的邮箱/密码用户（确认邮箱或 admin auto-confirm）。
-3. 获取用户 UUID，在 SQL Editor 执行 `insert into public.app_members(user_id) values ('真实UUID');`。
-4. 复制项目 URL、publishable key 到本地 `.env` 和 GitHub Repository Variables。
-5. 用本人账号验证可增删房源；无账号、未加入白名单账号和其他用户都不应读取/改写私人房源。
+2. 关闭 Authentication 中公开注册，保留 Email / Password provider。确定一个 **3–32 位、不区分大小写**的用户名，允许英文字母、数字、下划线和短横线，首字符为字母或数字。
+3. 在 Auth 管理后台创建用户：Email 填 `用户名的小写形式@accounts.home-compass.invalid`，例如用户名 `zhenwei` 对应 `zhenwei@accounts.home-compass.invalid`；设置自己的密码，并选择 **Auto Confirm User**。这只是内部登录标识，不是收件邮箱；不要向该地址发确认邮件。
+4. 如已有真实邮箱账号及数据，不能直接登录为对应用户名：管理员需在保持原 UUID 的前提下，通过 Supabase 支持的管理方式将该用户邮箱更新为内部标识并确认。不要直接改写 auth.users 表，也不要为同一个人重新建号后丢失原数据。
+5. 获取用户 UUID，在 SQL Editor 执行 `insert into public.app_members(user_id) values ('真实UUID');`。
+6. 复制项目 URL、publishable key 到本地 `.env` 和 GitHub Repository Variables。
+7. 用本人账号验证可增删房源；无账号、未加入白名单账号和其他用户都不应读取/改写私人房源。
 
-本版本使用密码登录，没有 OAuth 回调路径依赖。浏览器保存 Supabase 会话；退出会清空 UI 中的私人记录。Service Worker 不缓存 Supabase 响应，不持久化私人笔记；仅应用外壳和计算器可离线使用。通勤锚点、成本输入为本次会话临时值。
+前端通过确定性的用户名映射调用 Supabase `signInWithPassword`；密码哈希、验证、限流和会话仍由 Supabase Auth 负责，没有额外密码表或公开用户名查询接口。`.invalid` 是内部保留域名，不支持邮件找回；忘记密码时由管理员在 Supabase 后台重设。前端不提供注册、邮件登录或邮件找回流程。用户名映射不是访问权限，数据授权仍依赖用户 UUID、app_members 与 RLS。
+
+本版本使用用户名和密码登录，没有 OAuth 回调路径依赖。同一账号 Token 刷新时保留已加载数据，退出或切换账号才清空房源、指标和未保存的房源草稿。浏览器保存 Supabase 会话；退出会清空 UI 中的私人记录。Service Worker 不缓存 Supabase 响应，不持久化私人笔记；仅应用外壳和计算器可离线使用。通勤锚点、成本输入为本次会话临时值。
 
 ## GitHub Pages 发布（由 Zhenwei 执行 push）
 
 建议仓库名 `austin-home-compass`。尚未创建远程仓库，也未执行任何 push。
 
 1. GitHub Free 使用 **public** 仓库才能免费使用 Pages。页面与前端源代码公开，真实私人数据只存 Supabase。
-2. 创建 `xiaobaofamily/austin-home-compass` 仓库，不初始化 README。
+2. 创建 `XiaobaoFamily/austin-home-compass` 仓库，不初始化 README。
 3. Settings → Pages → Source 选择 **GitHub Actions**。
 4. Settings → Secrets and variables → Actions → **Variables** 添加：
    - `VITE_SUPABASE_URL`
